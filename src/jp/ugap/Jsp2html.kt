@@ -15,16 +15,23 @@ import java.util.*
 val ENCODE = "UTF-8"
 
 fun main(args: Array<String>) {
-    val file = Paths.get("step01.jsp")
-    val outfile = Paths.get("step01.html")
+    convertJspToHtml("path/to/jsp", "path/to/output", "path/to/script")
+}
+
+fun convertJspToHtml(input: String, output: String, appendChildren: String) {
+    val file = Paths.get(input)
+    val outfile = Paths.get(output)
+    val scriptfile = Paths.get(appendChildren)
     val strList = ArrayList<String>()
     val charset = Charset.forName(ENCODE)
-    
+
     Files.readAllLines(file, charset).forEach {
+        //htmlタグより上にある%は、消さないとjsoup
         if (it.contains("<%@")) return@forEach
-        
         var replacedLine = it
         when {
+            //%の場合、selectorとして使用できないため置換する
+            it.contains("%") -> replacedLine = it.replace("%", "percent")
             //c:ifの場合、selectorとして使用できないため置換する
             it.contains("c:if") -> replacedLine = it.replace("c:if", "cif")
         }
@@ -33,21 +40,28 @@ fun main(args: Array<String>) {
     Files.write(outfile, strList, charset)
 
     val doc: Document = Jsoup.parse(outfile.toFile(), ENCODE)
-    
+
     removeJspTags(doc)
-    
+
     replaceJspTagToHtmlTag(doc)
-    
+
+    val script: Document = Jsoup.parse(scriptfile.toFile(), ENCODE)
+    doc.select("body").append(script.html())
+
     val writer = Files.newBufferedWriter(outfile, Charset.defaultCharset())
     writer.write(doc.html())
     writer.close()
+    
 }
-
 fun removeJspTags(node: Node) {
     var i = 0
     while(i < node.childNodeSize()){
         val child: Node = node.childNode(i)
-        if (child.nodeName() == "c:set" || child.nodeName() == "noscript") {
+        println("nodeName: ${child.nodeName()}")
+        if (child.nodeName() == "c:set" 
+                || child.nodeName() == "percent"
+                || child.nodeName() == "script"
+                || child.nodeName() == "noscript") {
             child.remove()
         } else {
             //再帰的に検索
@@ -59,4 +73,5 @@ fun removeJspTags(node: Node) {
 
 fun replaceJspTagToHtmlTag(doc: Document) {
     doc.select("cif").tagName("div").attr("style", "display:none")
+    doc.select("#vueData").empty()
 }
