@@ -60,8 +60,7 @@ fun removeJspTags(node: Node) {
         println("nodeName: ${child.nodeName()}")
         if (child.nodeName() == "c:set" 
                 || child.nodeName() == "percent"
-                || child.nodeName() == "script"
-                || child.nodeName() == "noscript") {
+                || child.nodeName() == "script") {
             child.remove()
         } else {
             //再帰的に検索
