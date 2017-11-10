@@ -26,14 +26,14 @@ fun convertJspToHtml(input: String, output: String, appendChildren: String) {
     val charset = Charset.forName(ENCODE)
 
     Files.readAllLines(file, charset).forEach {
-        //htmlタグより上にある%は、消さないとjsoup
+        //htmlタグより上にある%は、消さないとjsoupがhtmlと認識してくれない
         if (it.contains("<%@")) return@forEach
-        var replacedLine = it
-        when {
+        val replacedLine = when {
             //%の場合、selectorとして使用できないため置換する
-            it.contains("%") -> replacedLine = it.replace("%", "percent")
+            it.contains("%") -> it.replace("%", "percent")
             //c:ifの場合、selectorとして使用できないため置換する
-            it.contains("c:if") -> replacedLine = it.replace("c:if", "cif")
+            it.contains("c:if") -> it.replace("c:if", "cif")
+            else -> it
         }
         strList.add(replacedLine)
     }
